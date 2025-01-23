@@ -1,7 +1,15 @@
-﻿// stage 2 completed
-// surrenderCard method renamed/replaced with transferItem method
-// hasCard method renamed/replaced with hasRank method
-// minor tweaks
+﻿/*
+* Solution to course project # 8
+* Introduction to programming course
+* Faculty of Mathematics and Informatics of Sofia University
+* Winter semester 2024/2025
+*
+* @author Kristian Krastev
+* @idnumber 4MI0600440* @compiler VC
+*
+* <file containing the game logic and execution methods>
+* 
+*/
 
 #include <iostream>
 #include <cstdlib>
