@@ -1,13 +1,19 @@
-﻿#include <iostream>
+﻿// stage 2 completed
+// surrenderCard method renamed/replaced with transferItem method
+// hasCard method renamed/replaced with hasRank method
+// minor tweaks
+
+#include <iostream>
 #include <cstdlib>
 #include <ctime>
 #include <vector>
 
-// const int NUM_RANKS = 13;
+const int NUM_RANKS = 13; // used entirely for readability
 const int NUM_SUIT = 4; // used entirely for readability
 const int HAND_SIZE = 6; // used entirely for readability
 
 std::vector<char> deck;
+std::vector<char> ranks = { '2', '3', '4', '5', '6', '7', '8', '9', 'X', 'J', 'Q', 'K', 'A' };
 std::vector<char> playerHand;
 std::vector<char> computerHand;
 std::vector<char> playerSets;
@@ -27,8 +33,6 @@ void swap(char& a, char& b) {
 }
 
 void initialiseDeck(std::vector<char>& deck) {
-	std::vector<char> ranks = { '1', '2', '3', '4', '5' };
-
 	//Create all the cards (NUM_SUIT is used for readability)
 	for (int rank = 0; rank < ranks.size(); rank++) {
 		for (int suit = 0; suit < NUM_SUIT; suit++) {
@@ -51,25 +55,25 @@ void dealCards(std::vector<char>& hand) {
 	}
 }
 
-// STAGE 1 METHODS USED FOR BOTH PARTICIPANTS
-bool hasCard(std::vector<char>& hand, char rank) {
-	for (int i = 0; i < hand.size(); i++) {
-		if (hand[i] == rank) {
+// METHODS USED FOR BOTH PARTICIPANTS
+bool hasRank(std::vector<char> vector, char rank) {
+	for (int i = 0; i < vector.size(); i++) {
+		if (vector.at(i) == rank) {
 			return true;
 		}
 	}
-
 	return false;
 }
 
-void surrenderCard(std::vector<char>& askerHand, std::vector<char>& giverHand, char rank) {
-	for (int i = 0; i < giverHand.size();) {
-		if (giverHand[i] == rank) {
-			askerHand.push_back(giverHand[i]);
-			giverHand.erase(giverHand.begin() + i);
+void transferItems(std::vector<char>& receiver, std::vector<char>& giver, char rank) {
+	for (int i = 0; i < giver.size();) {
+		if (giver.at(i) == rank) {
+			receiver.push_back(giver.at(i));
+			giver.erase(giver.begin() + i);
 		}
-		else
-			i++;
+		else {
+			++i;
+		}
 	}
 }
 
@@ -111,6 +115,13 @@ void extractAvailableSets(std::vector<char>& hand, std::vector<char>& sets, char
 	sets.push_back(setRank);
 }
 
+void gameEndCheck() {
+	if (playerSets.empty())
+		std::cout << "Computer collected all the sets! You lose :(" << std::endl;
+	else if (computerSets.empty())
+		std::cout << "You collected all the sets! You win :) " << std::endl;;
+}
+
 // STAGE 1 PLAYER TURN METHODS
 void sortHand(std::vector<char>& hand) {
 	for (int i = 0; i < hand.size(); i++) {
@@ -147,7 +158,7 @@ void handleEmptyPlayerHand(bool& playerHasNextTurn) {
 	}
 	else if (playerHand.empty() && deck.empty()) {
 		playerHasNextTurn = false;
-		std::cout << "The deck is empty! You cannot draw a card..." << std::endl;
+		std::cout << "The deck is empty! You cannot draw a card..." << std::endl << std::endl;
 	}
 }
 
@@ -156,13 +167,12 @@ void handleSetCompletion(char setRank, bool& playerHasNextTurn) {
 	do {
 		std::cout << "You have completed a set of " << setRank << "'s! Enter (y/Y) to lower it: ";
 		std::cin >> choice;
+		clearInputBuffer();
 	} while (choice != 'y' && choice != 'Y');
-	clearInputBuffer();
 
-	if (choice == 'y' || choice == 'Y') {
-		extractAvailableSets(playerHand, playerSets, setRank);
-		std::cout << std::endl;
-	}
+	extractAvailableSets(playerHand, playerSets, setRank);
+	std::cout << std::endl;
+
 	if (!playerHand.empty())
 		printSortedHand(playerHand);
 }
@@ -181,7 +191,7 @@ char getValidPlayerInput() {
 		std::cin >> rank;
 		std::cout << std::endl;
 		clearInputBuffer();
-	} while (!hasCard(playerHand, rank));
+	} while (!hasRank(playerHand, rank));
 
 	return rank;
 }
@@ -189,7 +199,7 @@ char getValidPlayerInput() {
 void handleOpponentHasCard(char rank, bool& playerHasNextTurn) {
 	char setRank;
 
-	surrenderCard(playerHand, computerHand, rank);
+	transferItems(playerHand, computerHand, rank);
 	std::cout << "Opponent has given you all of his cards of the rank!" << std::endl << std::endl;
 	printSortedHand(playerHand);
 
@@ -217,7 +227,7 @@ void handleOpponentDoesNotHaveCard(char rank, bool& playerHasNextTurn) {
 	std::cout << "Go fish! ";
 	drawCardFromDeck(playerHand);
 	char drawnCard = playerHand.back();
-	std::cout << "You drew rank " << drawnCard << std::endl;
+	std::cout << "You drew rank " << drawnCard << std::endl << std::endl;
 	printSortedHand(playerHand);
 
 	// Extract any newly formed sets after drawing
@@ -232,12 +242,12 @@ void handleOpponentDoesNotHaveCard(char rank, bool& playerHasNextTurn) {
 	if (drawnCard != rank)
 		playerHasNextTurn = false;
 	else {
-		std::cout << "You may ask again! " << std::endl;
-		printSortedHand(playerHand);
+		std::cout << "You may ask again! " << std::endl << std::endl;
+		//printSortedHand(playerHand);
 	}
 }
 
-void playerTurn() {
+void playerTurn_stage1() {
 	char rank;
 	bool playerHasNextTurn = true;
 	
@@ -247,11 +257,9 @@ void playerTurn() {
 		handleEmptyPlayerHand(playerHasNextTurn);
 		if (!playerHasNextTurn) return;
 
-		//std::cout << "It's your turn!" << std::endl;
-
 		rank = getValidPlayerInput();
 
-		if (hasCard(computerHand, rank)) 
+		if (hasRank(computerHand, rank)) 
 			handleOpponentHasCard(rank, playerHasNextTurn);
 		else 
 			handleOpponentDoesNotHaveCard(rank, playerHasNextTurn);
@@ -273,7 +281,7 @@ void handleEmptyComputerHand(bool& computerHasNextTurn) {
 		drawCardFromDeck(computerHand);
 	else if (computerHand.empty() && deck.empty()) {
 		computerHasNextTurn = false;
-		std::cout << "The deck is empty! Computer cannot draw a card." << std::endl;
+		std::cout << "The deck is empty! Computer cannot draw a card." << std::endl << std::endl;
 	}
 }
 
@@ -286,14 +294,16 @@ void handleInitialComputerSetExtraction(bool& computerHasNextTurn) {
 
 void handlePlayerHasCard(char rank, bool& computerHasNextTurn) {
 	char choice, setRank;
-	std::cout << "Enter (y/Y) to surrender all cards of rank " << rank << ": ";
-	std::cin >> choice;
-	clearInputBuffer();
-	if (choice == 'y' || choice == 'Y') {
-		surrenderCard(computerHand, playerHand, rank);
-		printSortedHand(playerHand);
-	}
-
+	do {
+		std::cout << "Enter (y/Y) to surrender all cards of rank " << rank << ": ";
+		std::cin >> choice;
+		std::cout << std::endl;
+		clearInputBuffer();
+	} while (choice != 'y' && choice != 'Y');
+	
+	transferItems(computerHand, playerHand, rank);
+	printSortedHand(playerHand);
+	
 	// Check for newly formed sets
 	if (checkForSets(computerHand, setRank))
 		extractAvailableSets(computerHand, computerSets, setRank);
@@ -328,36 +338,117 @@ void handlePlayerDoesNotHaveCard(char rank, bool& computerHasNextTurn) {
 	// Check if randomly drawn card == rank
 	if (drawnCard != rank) {
 		computerHasNextTurn = false;
+		std::cout << "It's your turn! " << std::endl << std::endl;
 	}
 	else
 		std::cout << "Opponent may ask again!" << std::endl << std::endl;
 }
 
-void computerTurn() {
+void computerTurn_stage1() {
 	char rank;
 	bool computerHasNextTurn = true;
-	//std::vector<char> lastAskedRank;
 
 	handleInitialComputerSetExtraction(computerHasNextTurn);
 
 	while (computerHasNextTurn) {
 		rank = getComputerInput();
-		/*If random rank has been asked during turn, pick another rank
-		while (std::find(lastAskedRank.begin(), lastAskedRank.end(), rank) != lastAskedRank.end()) {
-			randomIndex = std::rand() % computerHand.size();
-			rank = computerHand[randomIndex];
-		}
-		lastAskedRank.push_back(rank);*/
 		std::cout << "It's opponent's turn! Opponent has asked for: " << rank << std::endl;
 
-		if (hasCard(playerHand, rank)) 
+		if (hasRank(playerHand, rank)) 
 			handlePlayerHasCard(rank, computerHasNextTurn);
 		else 
 			handlePlayerDoesNotHaveCard(rank, computerHasNextTurn);	
 	}
 }
 
-// STAGE 2 
+// STAGE 2 PLAYER TURN METHODS
+char getValidPlayerSetInput() {
+	char setRank;
+	do {
+		std::cout << "Enter a VALID rank of a set: ";
+		std::cin >> setRank;
+		std::cout << std::endl;
+		clearInputBuffer();
+	} while (!hasRank(ranks, setRank));
+
+	return setRank;
+}
+
+void handleOpponentHasSet(char setRank, bool& playerHasNextSetTurn) {
+	transferItems(playerSets, computerSets, setRank);
+	std::cout << "Correct! Opponent has given you his set of " << setRank << "'s... " << std::endl << std::endl;
+	
+	// Check if tranfer emptied computerSet vector
+	if (computerSets.empty()) {
+		playerHasNextSetTurn = false;
+		return;
+	}
+
+	std::cout << "You may ask again!" << std::endl << std::endl;
+}
+
+void playerTurn_stage2() {
+	char setRank;
+	bool playerHasNextSetTurn = true;
+
+	gameEndCheck();
+
+	while (playerHasNextSetTurn) {
+		setRank = getValidPlayerSetInput();
+
+		if (hasRank(computerSets, setRank)) {
+			handleOpponentHasSet(setRank, playerHasNextSetTurn);
+		}
+		else {
+			std::cout << "Your guess is incorrect! It's opponent's turn..." << std::endl << std::endl;
+			playerHasNextSetTurn = false;
+		}
+	}
+}
+
+// STAGE 2 COMPUTER METHODS
+char getComputerSetInput() {
+	int randomIndex = std::rand() % ranks.size();
+	char setRank = ranks[randomIndex];
+	std::cout << "Opponent has asked for your set of " << setRank << "'s... " << std::endl;
+
+	return setRank;
+}
+
+void handlePlayerHasSet(char setRank, bool& computerHasNextTurn) {
+	char choice;
+	do {
+		std::cout << "Enter (y/Y) to surrender the set of rank " << setRank << ": ";
+		std::cin >> choice;
+		clearInputBuffer();
+	} while (choice != 'y' && choice != 'Y');
+	
+	std::cout << std::endl;
+	transferItems(computerSets, playerSets, setRank);
+
+	// Check if transfer emptied playerSet vector
+	if (playerSets.empty()) {
+		computerHasNextTurn = false;
+		return;
+	}
+}
+
+void computerTurn_stage2() {
+	char setRank;
+	bool computerHasNextTurn = true;
+
+	gameEndCheck();
+
+	while (computerHasNextTurn) {
+		setRank = getComputerSetInput();
+		if (hasRank(playerSets, setRank))
+			handlePlayerHasSet(setRank, computerHasNextTurn);
+		else {
+			std::cout << "Oppont has guessed incorrectly! It's your turn" << std::endl << std::endl;
+			computerHasNextTurn = false;
+		}
+	}
+}
 
 // GAME METHODS
 void gameStage_1() {
@@ -368,10 +459,10 @@ void gameStage_1() {
 
 	while (true) {
 		if (!playerHand.empty())
-			playerTurn();
+			playerTurn_stage1();
 
 		if (!computerHand.empty())
-			computerTurn();
+			computerTurn_stage1();
 
 		if (playerHand.empty() && computerHand.empty() && deck.empty()) {
 			std::cout << "All sets have been collected. End of stage 1!" << std::endl;
@@ -380,8 +471,20 @@ void gameStage_1() {
 		}
 	}
 }
-void gameStage_() {
 
+void gameStage_2() {
+	std::cout << "Let stage 2 begin!" << std::endl;
+	std::cout << "------------------" << std::endl << std::endl;
+
+	while (!playerSets.empty() && !computerSets.empty()) {
+		if (!playerSets.empty()) 
+			playerTurn_stage2();
+
+		if (!computerSets.empty())
+			computerTurn_stage2();
+	}
+		
+	gameEndCheck();
 }
 
 int main() {
@@ -401,8 +504,7 @@ int main() {
 	gameStage_1();
 
 	// Game stage 2
-	std::cout << "Let stage 2 begin!" << std::endl;
-	std::cout << "------------------" << std::endl << std::endl;
+	gameStage_2();
 
 	return 0;
 }
